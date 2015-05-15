@@ -1,0 +1,78 @@
+/*
+ * //////////////////////////////////////////////////
+ * //making sense of the Parallax PIR sensor's output
+ * //////////////////////////////////////////////////
+ *
+ * Switches a LED according to the state of the sensors output pin.
+ * Determines the beginning and end of continuous motion sequences.
+ *
+ * @author: Aidan Melen
+ * @date: 05/14/2015
+ *
+ * The PIR Sensor is an easy to use digital infrared motion sensor module.
+ *
+ * The sensor's output pin goes to HIGH if motion is present; else it will go LOW.
+ */
+
+int pirPin = 12;    //the digital pin connected to the PIR sensor's output
+int ledPin = 13;
+int relayPin = 7;
+
+int calibrationTime = 10; // the time we give the sensor to calibrate (10-60 secs according to the datasheet)
+boolean first = true;
+
+/*
+  led function
+  **/
+void led()
+{
+  digitalWrite(ledPin, HIGH); //make a sound
+  delay(500);//delay 2ms
+  digitalWrite(ledPin, LOW); //silient
+  delay(500);//delay 2ms
+}
+
+
+/*
+  Setup function
+  **/
+void setup() {
+  Serial.begin(9600);
+  pinMode(pirPin, INPUT);
+  pinMode(ledPin, OUTPUT);
+  pinMode(relayPin, OUTPUT);
+
+  //give the sensor some time to calibrate
+  Serial.println("CALIBRATING SENSOR");
+  for (int i = calibrationTime; i > 0; i--) {
+    Serial.println(i);
+    led();
+  }
+  Serial.println("SENSOR ACTIVE");
+}
+
+
+/*
+ Loop function
+ **/
+void loop() {
+
+  if (digitalRead(pirPin) == HIGH) { // object detected
+    if (first)
+    {
+      Serial.println("---------------");
+      Serial.println("MOTION DETECTED");
+      Serial.println("---------------");
+      Serial.println();
+      first = false;
+    }
+    digitalWrite(ledPin, HIGH);
+    digitalWrite(relayPin, HIGH);
+
+  } else { // no objects detected
+    digitalWrite(ledPin, LOW);
+    digitalWrite(relayPin, LOW);
+    first = true;
+  }
+
+}
