@@ -16,10 +16,9 @@ const int bluPin = 3;
 const int pirPin = 12; //the digital pin connected to the PIR sensor's output
 const int relayPin = 13;
 
-const int setupTime = 30;
-const int calibrationTime = 30; // the time we give the sensor to calibrate (10-60 secs according to the datasheet)
-long unsigned int startTime;
-long unsigned int pause = 1740000; // if there remains motion during the pause, keep relay on for another cycle.
+const int setupTime = 10;
+const int calibrationTime = 15; // the time we give the sensor to calibrate (10-60 secs according to the datasheet)
+
 boolean first = true;
 boolean reset = true;
 
@@ -94,6 +93,20 @@ void blueLed()
   delay(500);
 }
 
+/*
+  green led function
+  **/
+void yellowLed()
+{
+  digitalWrite(redPin, 200); //turn ON
+  digitalWrite(grePin, 255); //turn ON
+  digitalWrite(bluPin, 0); //turn ON
+  delay(500); // delay 0.5 seconds
+  digitalWrite(redPin, LOW); // turn OFF
+  digitalWrite(grePin, LOW); // turn OFF
+  digitalWrite(bluPin, LOW); // turn OFF
+  delay(500);
+}
 
 
 /*
@@ -156,26 +169,32 @@ void loop() {
     }
     digitalWrite(relayPin, HIGH);
     greenLedON();
-    delay(5000);
+    Serial.print("Triggered for 5 minutes");
+    for (int i = 1; i <= 5; i++) {
+      
+      delay(60000);
+      Serial.print("Minute: ");
+      Serial.println(i);
+    }
 
     /*
     Check for reset motion during the last minute of activation time
     **/
-    for (int i = 0; i < 60; i++) {
+    for (int i = 1; i <= 60; i++) {
       if (digitalRead(pirPin) == HIGH) {
         if (reset) {
           Serial.println("---------------");
           Serial.println("REACTIVATE TIMER");
           Serial.println("---------------");
           Serial.println();
-          i = 0; // reset timer value
+          i = 1; // reset timer value
           reset = false;
         }
-        delay(1000);
+        yellowLed();
         Serial.println(i);
 
       } else {
-        delay(1000);
+        yellowLed();
         Serial.println(i);
         reset = true;
       }
