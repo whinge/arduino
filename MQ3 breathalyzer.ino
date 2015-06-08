@@ -6,12 +6,14 @@
 // To convert mg/L to BAC, multiply by 210 and divide by 1000, or in other words, multiply by 0.21.
 //
 // For example, if the analog output from our MQ3 is reading 400, we divide 400 by 1023 (the highest analog value) in order to get the ratio or percentage of alcohol on the breath.
-// Then we determine that 0.4 or 40% alcohol on the breath will yeild 0.4 * 0.21 = 0.084, which is slightly more than the legal limit in in most states of 0.08.
+// Then we determine that 0.4 or 40% alcohol on the breath will yield 0.4 * 0.21 = 0.084, which is slightly more than the legal limit in in most states of 0.08.
 //
 // @author: Aidan Melen
 // @date: 06/08/2015
 
-const int mq3Output = 0; //The output from the MQ3 alcohol sensor goes into analog pin A0 of the arduino
+const int mq3Pin = 0; // The output from the MQ3 alcohol sensor goes into analog pin A0 of the arduino
+const int buzzerPin = 13; // buzzer goes into analog pin A1 of the arduino.
+const int frequency = 450;
 
 // The RGD-LED connects to digital pins D10-D12 on the arduino
 const int redPin = 12;
@@ -19,7 +21,8 @@ const int grePin = 11;
 const int bluPin = 10;
 
 int value; // Holds the analog value from the MQ3 sensor
-double bac; // Holds the calculated Blood Alcohol Content value
+double percentage; // stores the percentage of alcohol in blood
+double bac; // stores the calculated Blood Alcohol Content value
 
 // Used for timing a 5 second long blow form the user
 int startTime;
@@ -31,7 +34,7 @@ int currentTime;
 //
 void redLed()
 {
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 5; i++) { // 5 seconds
     digitalWrite(redPin, 255); // turn ON
     digitalWrite(grePin, 0);
     digitalWrite(bluPin, 0);
@@ -49,18 +52,22 @@ void redLed()
 //
 void greenLed() {
   delay(250);
+  analogWrite(buzzerPin, frequency);
   digitalWrite(redPin, 0); // turn ON
   digitalWrite(grePin, 255);
   digitalWrite(bluPin, 0);
   delay(250);
+  analogWrite(buzzerPin, LOW);
   digitalWrite(redPin, LOW); // turn OFF
   digitalWrite(grePin, LOW);
   digitalWrite(bluPin, LOW);
   delay(250);
+  analogWrite(buzzerPin, frequency);
   digitalWrite(redPin, 0);
   digitalWrite(grePin, 255);
   digitalWrite(bluPin, 0);
   delay(250);
+  analogWrite(buzzerPin, LOW);
   digitalWrite(redPin, LOW);
   digitalWrite(grePin, LOW);
   digitalWrite(bluPin, LOW);
@@ -84,9 +91,12 @@ void blueLedON()
 //
 void blueLedOFF()
 {
+  analogWrite(buzzerPin, frequency);
+  delay(250);
   digitalWrite(redPin, LOW); // turn OFF
   digitalWrite(grePin, LOW);
   digitalWrite(bluPin, LOW);
+  analogWrite(buzzerPin, LOW);
 }
 
 
@@ -100,6 +110,7 @@ void setup() {
   pinMode(redPin, OUTPUT);
   pinMode(grePin, OUTPUT);
   pinMode(bluPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
 }
 
 
@@ -108,14 +119,16 @@ void setup() {
 //
 void loop()
 {
-  Serial.println("Sensor Calibrating");
+  Serial.println("Sensor Calibrating \n");
   redLed();
 
-  Serial.println("User Ready");
+  Serial.println("User Ready \n");
   greenLed();
 
-  Serial.println("User Blow");
+  Serial.println("User Blow \n");
   blueLedON();
+
+
 
   startTime = millis(); // begin timer
   currentTime = startTime;
@@ -125,9 +138,10 @@ void loop()
   //
   while (currentTime - startTime < 5000) {
 
-    value = analogRead(mq3Output);//reads the analaog value from the alcohol sensor's AOUT pin
-
-    bac = (value / 1000) * 0.21; // calculate BAC
+    value = analogRead(mq3Pin);//reads the analaog value from the alcohol sensor's AOUT pin
+    
+    percentage = value / 1023.0;
+    bac = percentage * 0.21; // calculate BAC
 
     currentTime = millis();
   } // end while
@@ -135,11 +149,15 @@ void loop()
   //
   // Print output String and assume that any BAC reading below 0.02 is really 0 because the sensor doesn't always drop to absolute 0 when testing.
   //
-  if (bac >= 0.02) {
-    Serial.println(String("BAC Result: ") + bac);
+  
+  Serial.println(String("value: ") + value);
+  Serial.println(String("%: ") + percentage);
+  
+  if (bac > 0.01) {
+    Serial.println(String("BAC Result: ") + bac + "\n");
     Serial.println();
   } else {
-    Serial.println(String("BAC Result: ") + 0);
+    Serial.println("No alcohol was detected \n");
     Serial.println();
   }
 
