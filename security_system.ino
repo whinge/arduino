@@ -1,12 +1,11 @@
 /*
- * The start of an Embedded Systems group project.
+ * An Embedded Systems group project.
+ *
+ * The PIR Sensor is an easy to use digital infrared motion sensor module.
+ * The sensor's output pin goes to HIGH if motion is present; else it will go LOW.
  *
  * @author: Aidan Melen, Conrad Lieness, Grady Mellin
  * @date: 05/14/2015
- *
- * The PIR Sensor is an easy to use digital infrared motion sensor module.
- *
- * The sensor's output pin goes to HIGH if motion is present; else it will go LOW.
  */
 
 boolean first = true;
