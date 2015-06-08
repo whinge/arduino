@@ -23,10 +23,27 @@ const int bluPin = 10;
 int value; // Holds the analog value from the MQ3 sensor
 double percentage; // stores the percentage of alcohol in blood
 double bac; // stores the calculated Blood Alcohol Content value
+double initBAC; // stores initial BAC. Used to compensate for humidity and tempurature
 
 // Used for timing a 5 second long blow form the user
 int startTime;
 int currentTime;
+
+boolean first = true; // compensate for humidity
+
+
+//
+// Setup function
+//
+void setup() {
+  Serial.begin(9600);// sets the baud rate
+
+  // sets the RGB-LED's as an output for the arduino
+  pinMode(redPin, OUTPUT);
+  pinMode(grePin, OUTPUT);
+  pinMode(bluPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+}
 
 
 //
@@ -34,7 +51,8 @@ int currentTime;
 //
 void redLed()
 {
-  for (int i = 0; i < 5; i++) { // 5 seconds
+  int i = 30; // 30 seconds
+  while (i > 0) {
     digitalWrite(redPin, 255); // turn ON
     digitalWrite(grePin, 0);
     digitalWrite(bluPin, 0);
@@ -43,6 +61,8 @@ void redLed()
     digitalWrite(grePin, LOW);
     digitalWrite(bluPin, LOW);
     delay(500);
+    Serial.println(i);
+    i--;
   }
 }
 
@@ -99,19 +119,23 @@ void blueLedOFF()
   analogWrite(buzzerPin, LOW);
 }
 
-
 //
-// Setup function
+// Record MQ3 sensor for 5 seconds.
 //
-void setup() {
-  Serial.begin(9600);// sets the baud rate
+double readBAC() {
+  while (currentTime - startTime < 5000) {
 
-  // sets the RGB-LED's as an output for the arduino
-  pinMode(redPin, OUTPUT);
-  pinMode(grePin, OUTPUT);
-  pinMode(bluPin, OUTPUT);
-  pinMode(buzzerPin, OUTPUT);
+    value = analogRead(mq3Pin);//reads the analaog value from the alcohol sensor's AOUT pin
+
+    percentage = value / 1023.0;
+    bac = percentage * 0.21; // calculate BAC
+
+    currentTime = millis();
+  } // end while
+  return bac;
 }
+
+
 
 
 //
@@ -119,50 +143,43 @@ void setup() {
 //
 void loop()
 {
-  Serial.println("Sensor Calibrating \n");
-  redLed();
-
-  Serial.println("User Ready \n");
-  greenLed();
-
-  Serial.println("User Blow \n");
-  blueLedON();
-
-
-
-  startTime = millis(); // begin timer
-  currentTime = startTime;
-
   //
-  // Record MQ3 sensor for 5 seconds.
+  // Get a reading without any alcohol present. 
+  // Use this reading to account for the MQ3 humidity and tempurature error. 
   //
-  while (currentTime - startTime < 5000) {
-
-    value = analogRead(mq3Pin);//reads the analaog value from the alcohol sensor's AOUT pin
+  if (first) {
+    Serial.println("Initalize \n");
+    initBAC = readBAC();
+    first = false;
     
-    percentage = value / 1023.0;
-    bac = percentage * 0.21; // calculate BAC
-
-    currentTime = millis();
-  } // end while
-
-  //
-  // Print output String and assume that any BAC reading below 0.02 is really 0 because the sensor doesn't always drop to absolute 0 when testing.
-  //
-  
-  Serial.println(String("value: ") + value);
-  Serial.println(String("%: ") + percentage);
-  
-  if (bac > 0.01) {
-    Serial.println(String("BAC Result: ") + bac + "\n");
-    Serial.println();
   } else {
-    Serial.println("No alcohol was detected \n");
-    Serial.println();
+    Serial.println("Calibration \n");
+    redLed();
+
+    Serial.println("User Ready \n");
+    greenLed();
+
+    Serial.println("Blow \n");
+    blueLedON();
+
+
+
+    startTime = millis(); // begin timer
+    currentTime = startTime;
+
+    bac = readBAC();
+    bac = bac - initBAC;
+
+    //
+    // Print output String and assume that any BAC reading below 0.02 is really 0 because the sensor doesn't always drop to absolute 0 when testing.
+    //
+    if (bac > 0.01) {
+      Serial.println(String("BAC Result: ") + bac + "\n");
+      Serial.println();
+    } else {
+      Serial.println("No alcohol was detected \n");
+      Serial.println();
+    }
+    blueLedOFF(); // User finished blowing
   }
-
-  blueLedOFF(); // User finished blowing
-
-  redLed(); // sensor recalibrate
-
 }
