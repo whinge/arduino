@@ -11,19 +11,18 @@
 // @author: Aidan Melen
 // @date: 06/08/2015
 
+#include <LiquidCrystal.h>
+
 const int mq3Pin = 0; // The output from the MQ3 alcohol sensor goes into analog pin A0 of the arduino
+const int buttonPin = 2;
 const int buzzerPin = 13; // buzzer goes into analog pin A1 of the arduino.
 const int frequency = 450;
-
-// The RGD-LED connects to digital pins D10-D12 on the arduino
-const int redPin = 12;
-const int grePin = 11;
-const int bluPin = 10;
+// initialize the library with the numbers of the interface pins
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 int value; // Holds the analog value from the MQ3 sensor
 double percentage; // stores the percentage of alcohol in blood
 double bac; // stores the calculated Blood Alcohol Content value
-double initBAC; // stores initial BAC. Used to compensate for humidity and tempurature
 
 // Used for timing a 5 second long blow form the user
 int startTime;
@@ -31,101 +30,75 @@ int currentTime;
 
 boolean first = true; // compensate for humidity
 
-
 //
 // Setup function
 //
 void setup() {
-  Serial.begin(9600);// sets the baud rate
-
-  // sets the RGB-LED's as an output for the arduino
-  pinMode(redPin, OUTPUT);
-  pinMode(grePin, OUTPUT);
-  pinMode(bluPin, OUTPUT);
+  Serial.begin(9600); // sets the baud rate
+  lcd.begin(16, 4);
   pinMode(buzzerPin, OUTPUT);
+  pinMode(buttonPin, INPUT);
 }
 
-
-//
-// Red led function. Sensor is calibrating or recalibrating.
-//
-void redLed()
-{
-  int i = 30; // 30 seconds
-  while (i > 0) {
-    digitalWrite(redPin, 255); // turn ON
-    digitalWrite(grePin, 0);
-    digitalWrite(bluPin, 0);
-    delay(500); // delay 0.5 seconds
-    digitalWrite(redPin, LOW); // turn OFF
-    digitalWrite(grePin, LOW);
-    digitalWrite(bluPin, LOW);
-    delay(500);
-    Serial.println(i);
-    i--;
+void buttonWait() {
+  while (digitalRead(buttonPin) == HIGH) { // while button not pressed
+    Serial.print("");
   }
 }
 
+void flashScreen() {
+  delay(1000);
+  lcd.setCursor(6, 1);
+  lcd.print("ARDUINO");
 
-//
-// Green led  ON function. User is ready.
-//
-void greenLed() {
-  delay(250);
-  analogWrite(buzzerPin, frequency);
-  digitalWrite(redPin, 0); // turn ON
-  digitalWrite(grePin, 255);
-  digitalWrite(bluPin, 0);
-  delay(250);
-  analogWrite(buzzerPin, LOW);
-  digitalWrite(redPin, LOW); // turn OFF
-  digitalWrite(grePin, LOW);
-  digitalWrite(bluPin, LOW);
-  delay(250);
-  analogWrite(buzzerPin, frequency);
-  digitalWrite(redPin, 0);
-  digitalWrite(grePin, 255);
-  digitalWrite(bluPin, 0);
-  delay(250);
-  analogWrite(buzzerPin, LOW);
-  digitalWrite(redPin, LOW);
-  digitalWrite(grePin, LOW);
-  digitalWrite(bluPin, LOW);
-  delay(500);
+  lcd.setCursor(8, 2);
+  lcd.print("BREATHALYZER");
 }
 
+void calibrationScreen() {
+  lcd.setCursor(1, 0);
+  lcd.print("CALIBRATING SENSOR");
+  Serial.println("CALIBRATING SENSOR \n");
 
-//
-// Blue led function. User is blowing.
-//
-void blueLedON()
-{
-  digitalWrite(redPin, 0); // turn ON
-  digitalWrite(grePin, 0);
-  digitalWrite(bluPin, 255);
+  for (int i = 30; i > 0; i--) { // 30 seconds
+    delay(1000);
+    if (i >= 10) {
+      lcd.setCursor(13, 2);
+      lcd.print(i);
+    } else { // reformat single digit values
+      lcd.setCursor(13, 2);
+      lcd.print("   ");
+      lcd.setCursor(14, 2);
+      lcd.print(i);
+    }
+  }
 }
 
+void buttonScreen() {
+  lcd.setCursor(4, 0);
+  lcd.print("SENSOR READY");
+  Serial.print("SENSOR READY \n");
+  lcd.setCursor(6, 2);
+  lcd.print("PRESS THE BUTTON");
+  lcd.setCursor(8, 3);
+  lcd.print("TO CONTINUE");
 
-//
-// Blue led function. User is finished blowing.
-//
-void blueLedOFF()
-{
-  analogWrite(buzzerPin, frequency);
-  delay(250);
-  digitalWrite(redPin, LOW); // turn OFF
-  digitalWrite(grePin, LOW);
-  digitalWrite(bluPin, LOW);
-  analogWrite(buzzerPin, LOW);
+  buttonWait();
 }
+
 
 //
 // Record MQ3 sensor for 5 seconds.
 //
 double readBAC() {
+  lcd.setCursor(2, 1);
+  lcd.print("BLOW INTO SENSOR");
+  startTime = millis(); // begin timer
+  currentTime = startTime;
+
   while (currentTime - startTime < 5000) {
 
-    value = analogRead(mq3Pin);//reads the analaog value from the alcohol sensor's AOUT pin
+    value = analogRead(mq3Pin); //reads the analaog value from the alcohol sensor's AOUT pin
 
     percentage = value / 1023.0;
     bac = percentage * 0.21; // calculate BAC
@@ -136,50 +109,46 @@ double readBAC() {
 }
 
 
-
-
 //
 // Loop function
 //
-void loop()
-{
-  //
-  // Get a reading without any alcohol present. 
-  // Use this reading to account for the MQ3 humidity and tempurature error. 
-  //
+void loop() {
   if (first) {
-    Serial.println("Initalize \n");
-    initBAC = readBAC();
+    flashScreen();
+    delay(2000);
+    lcd.clear();
     first = false;
-    
-  } else {
-    Serial.println("Calibration \n");
-    redLed();
-
-    Serial.println("User Ready \n");
-    greenLed();
-
-    Serial.println("Blow \n");
-    blueLedON();
-
-
-
-    startTime = millis(); // begin timer
-    currentTime = startTime;
-
-    bac = readBAC();
-    bac = bac - initBAC;
-
-    //
-    // Print output String and assume that any BAC reading below 0.02 is really 0 because the sensor doesn't always drop to absolute 0 when testing.
-    //
-    if (bac > 0.01) {
-      Serial.println(String("BAC Result: ") + bac + "\n");
-      Serial.println();
-    } else {
-      Serial.println("No alcohol was detected \n");
-      Serial.println();
-    }
-    blueLedOFF(); // User finished blowing
   }
+
+  calibrationScreen();
+  lcd.clear();
+
+  buttonScreen();
+  lcd.clear();
+
+  bac = readBAC();
+  lcd.clear();
+
+  //
+  // Print output String and assume that any BAC reading below 0.01 is really 0 because the sensor doesn't always drop to absolute 0 when testing.
+  //
+  if (bac > 0.01) {
+    lcd.setCursor(2, 0);
+    lcd.print(String("BAC RESULT: ") + bac);
+    lcd.setCursor(6, 2);
+    lcd.print("PRESS THE BUTTON");
+    lcd.setCursor(8, 3);
+    lcd.print("TO CONTINUE");
+    buttonWait();
+
+  } else {
+    lcd.setCursor(1, 0);
+    lcd.print("NO ALCOHOL PRESENT");
+    lcd.setCursor(6, 2);
+    lcd.print("PRESS THE BUTTON");
+    lcd.setCursor(8, 3);
+    lcd.print("TO CONTINUE");
+    buttonWait();
+  }
+  lcd.clear();
 }
