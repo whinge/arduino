@@ -60,9 +60,6 @@ void loop()
   Serial.println(inches);
   Serial.print("in, ");
 
-  delay(100);
-
-
   if (inches <= 1) { // If a cup is detected
 
     int count = 0;
@@ -85,7 +82,9 @@ void loop()
       count++;
 
       Serial.println(count);
+      
     }
+    delay(30000); //allow time for user to remove tea cup
   } else {
     pos = 60;
   }
