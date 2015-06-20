@@ -8,8 +8,7 @@
 
 #include <Servo.h>
 
-Servo myservo;  // create servo object to control a servo
-// twelve servo objects can be created on most boards
+Servo servo;  // create servo object to control a servo
 
 const int pingPin = 12;
 const int servoPin = 13;
@@ -18,8 +17,8 @@ int pos = 60;    // variable to store the servo position
 void setup()
 {
   Serial.begin(9600);
-  myservo.attach(servoPin);  // attaches the servo on pin 11 to the servo object
-  myservo.write(pos);
+  servo.attach(servoPin);  // attaches the servo on pin 11 to the servo object
+  servo.write(pos);
 }
 
 long microsecondsToInches(long microseconds)
@@ -34,7 +33,7 @@ long microsecondsToInches(long microseconds)
 
 void loop()
 {
-  myservo.write(60);
+  servo.write(60);
   // establish variables for duration of the ping,
   // and the distance result in inches and centimeters:
   long duration, inches;
@@ -54,38 +53,47 @@ void loop()
   pinMode(pingPin, INPUT);
   duration = pulseIn(pingPin, HIGH);
 
-  // convert the time into a distance
-  inches = microsecondsToInches(duration);
+  inches = microsecondsToInches(duration); // convert the time into a distance
 
   Serial.println(inches);
   Serial.print("in, ");
 
-  if (inches <= 1) { // If a cup is detected
-
+  if (inches < 2) // If a cup is detected
+  {
     int count = 0;
 
-    while (count < 180) { // 3 minutes
-
-      for (pos = 60; pos >= 0; pos -= 1) { // goes from 0 degrees to 60 degrees
-        myservo.write(pos);              // tell servo to go to position in variable 'pos'
-        delay(30);                       // waits 30ms for the servo to reach the position
+    while (count < 180) // 3 minutes of tea dunking
+    {
+      //
+      // servo motion UP
+      //
+      for (pos = 60; pos >= 0; pos -= 1)  // goes from 0 degrees to 60 degrees
+      {
+        servo.write(pos);// tell servo to go to position in variable 'pos'
+        delay(30); // waits 30ms for the servo to reach the position
       }
-      delay(1000);
+      delay(100);
       count++;
-      Serial.println(count);
-
-      for (pos = 0; pos <= 60; pos += 1) { // goes from 60 degrees to 0 degrees
-        myservo.write(pos);              // tell servo to go to position in variable 'pos'
-        delay(30);                       // waits 30ms for the servo to reach the position
-      }
-      delay(1000);
-      count++;
-
       Serial.println(count);
       
+      //
+      // servo motion DOWN
+      //
+      for (pos = 0; pos <= 60; pos += 1) // goes from 60 degrees to 0 degrees
+      {
+        servo.write(pos);
+        delay(30);
+      }
+      delay(100);
+      count++;
+
+      Serial.println(count);
+
+      delay(30000); // allow time for user to remove mug and avoid instant re-triggering of ping sensor.
     }
-    delay(30000); //allow time for user to remove tea cup
-  } else {
+  }
+  else
+  {
     pos = 60;
   }
 }
