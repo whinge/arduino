@@ -11,14 +11,15 @@
 // @author: Aidan Melen
 // @date: 06/08/2015
 
-#include <LiquidCrystal.h>
 
-const int mq3Pin = 0; // The output from the MQ3 alcohol sensor goes into analog pin A0 of the arduino
-const int buttonPin = 2;
-const int buzzerPin = 13; // buzzer goes into analog pin A1 of the arduino.
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7); // initialize the library with the numbers of the interface pins
+
+const int mq3Pin = A0; // The output from the MQ3 alcohol sensor goes into analog pin A0 of the arduino.
+const int buzzerPin = A1; // buzzer goes into analog pin A1 of the arduino.
 const int frequency = 450;
-// initialize the library with the numbers of the interface pins
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+
+const int buttonPin = 2;// change to 11 // The button will act as a pull-down switch and will enable the user to continue through the program once it is pressed
 
 int value; // Holds the analog value from the MQ3 sensor
 double percentage; // stores the percentage of alcohol in blood
@@ -30,6 +31,7 @@ int currentTime;
 
 boolean first = true; // compensate for humidity
 
+
 //
 // Setup function
 //
@@ -40,21 +42,22 @@ void setup() {
   pinMode(buttonPin, INPUT);
 }
 
-void buttonWait() {
-  while (digitalRead(buttonPin) == HIGH) { // while button not pressed
-    Serial.print("");
-  }
-}
 
+//
+// Prompt the user on startup
+//
 void flashScreen() {
   delay(1000);
   lcd.setCursor(6, 1);
   lcd.print("ARDUINO");
-
   lcd.setCursor(8, 2);
   lcd.print("BREATHALYZER");
 }
 
+
+//
+// Prompt the user of sensor calibration
+//
 void calibrationScreen() {
   lcd.setCursor(1, 0);
   lcd.print("CALIBRATING SENSOR");
@@ -74,6 +77,20 @@ void calibrationScreen() {
   }
 }
 
+
+//
+// Wait until button is press to continue
+//
+void buttonWait() {
+  while (digitalRead(buttonPin) == HIGH) { // while button not pressed
+    Serial.print("");
+  }
+}
+
+
+//
+// Prompt the user to continue
+//
 void buttonScreen() {
   lcd.setCursor(4, 0);
   lcd.print("SENSOR READY");
@@ -113,7 +130,7 @@ double readBAC() {
 // Loop function
 //
 void loop() {
-  if (first) {
+  if (first) { // only play flash screen on first iteration
     flashScreen();
     delay(2000);
     lcd.clear();
