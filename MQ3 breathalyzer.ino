@@ -6,20 +6,19 @@
 // To convert mg/L to BAC, multiply by 210 and divide by 1000, or in other words, multiply by 0.21.
 //
 // For example, if the analog output from our MQ3 is reading 400, we divide 400 by 1023 (the highest analog value) in order to get the ratio or percentage of alcohol on the breath.
-// Then we determine that 0.4 or 40% alcohol on the breath will yield 0.4 * 0.21 = 0.084, which is slightly more than the legal limit in in most states of 0.08.
+// Then we determine that 0.4 or 40% alcohol on the breath will yield 0.4 * 0.21 = 0.084, which is slightly more than the legal alimit in in most states of 0.08.
 //
 // @author: Aidan Melen
 // @date: 06/08/2015
 
-
 #include <LiquidCrystal.h>
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7); // initialize the library with the numbers of the interface pins
 
-const int mq3Pin = A0; // The output from the MQ3 alcohol sensor goes into analog pin A0 of the arduino.
-const int buzzerPin = A1; // buzzer goes into analog pin A1 of the arduino.
+const int mq3Pin = A0; // The output from the MQ3 alcohol sensor goes into analog pin A0 of the arduino
+const int buttonPin = 2;
+const int buzzerPin = 3; // buzzer goes into analog pin A1 of the arduino.
 const int frequency = 450;
-
-const int buttonPin = 2;// change to 11 // The button will act as a pull-down switch and will enable the user to continue through the program once it is pressed
+// initialize the library with the numbers of the interface pins
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 
 int value; // Holds the analog value from the MQ3 sensor
 double percentage; // stores the percentage of alcohol in blood
@@ -31,7 +30,6 @@ int currentTime;
 
 boolean first = true; // compensate for humidity
 
-
 //
 // Setup function
 //
@@ -42,22 +40,27 @@ void setup() {
   pinMode(buttonPin, INPUT);
 }
 
+void buttonWait() {
+  while (digitalRead(buttonPin) == HIGH) { // while button not pressed
+    Serial.print("");
+  }
+}
 
-//
-// Prompt the user on startup
-//
+void playSound() {
+  analogWrite(buzzerPin, frequency);
+  delay(250);
+  analogWrite(buzzerPin, LOW);
+}
+
 void flashScreen() {
   delay(1000);
   lcd.setCursor(6, 1);
   lcd.print("ARDUINO");
+
   lcd.setCursor(8, 2);
   lcd.print("BREATHALYZER");
 }
 
-
-//
-// Prompt the user of sensor calibration
-//
 void calibrationScreen() {
   lcd.setCursor(1, 0);
   lcd.print("CALIBRATING SENSOR");
@@ -77,20 +80,6 @@ void calibrationScreen() {
   }
 }
 
-
-//
-// Wait until button is press to continue
-//
-void buttonWait() {
-  while (digitalRead(buttonPin) == HIGH) { // while button not pressed
-    Serial.print("");
-  }
-}
-
-
-//
-// Prompt the user to continue
-//
 void buttonScreen() {
   lcd.setCursor(4, 0);
   lcd.print("SENSOR READY");
@@ -101,6 +90,8 @@ void buttonScreen() {
   lcd.print("TO CONTINUE");
 
   buttonWait();
+  
+  playSound();
 }
 
 
@@ -122,6 +113,9 @@ double readBAC() {
 
     currentTime = millis();
   } // end while
+  
+  playSound();
+  
   return bac;
 }
 
@@ -130,7 +124,7 @@ double readBAC() {
 // Loop function
 //
 void loop() {
-  if (first) { // only play flash screen on first iteration
+  if (first) {
     flashScreen();
     delay(2000);
     lcd.clear();
