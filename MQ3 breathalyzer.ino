@@ -41,7 +41,7 @@ void setup() {
 }
 
 void buttonWait() {
-  while (digitalRead(buttonPin) == HIGH) { // while button not pressed
+  while (digitalRead(buttonPin) == LOW) { // while button not pressed
     Serial.print("");
   }
 }
@@ -143,7 +143,7 @@ void loop() {
   //
   // Print output String and assume that any BAC reading below 0.01 is really 0 because the sensor doesn't always drop to absolute 0 when testing.
   //
-  if (bac > 0.01) {
+  if (bac > 0.015) {
     lcd.setCursor(2, 0);
     lcd.print(String("BAC RESULT: ") + bac);
     lcd.setCursor(6, 2);
